@@ -5,10 +5,10 @@ class PandevCliPlugin < Formula
   
 
   if Hardware::CPU.intel?
-    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.0.0/pandev-cli-plugin_1.0.0_macOS_amd64.tar.gz"
+    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.0.1/pandev-cli-plugin_1.0.1_macOS_amd64.tar.gz"
     sha256 "0de5ffad9dc20c507d08fca4928f7418776f50e7d0680337abda8545b90a57c1"
   else
-    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.0.0/pandev-cli-plugin_1.0.0_macOS_arm64.tar.gz"
+    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.0.1/pandev-cli-plugin_1.0.1_macOS_arm64.tar.gz"
     sha256 "3153629a2bdc2a9e23615a678d8e1cda69e33961d3f3f892aa8bece18881cf6c"
   end
 
