@@ -14,7 +14,7 @@ class PandevCliPlugin < Formula
 
   def install
     libexec.install Dir["*"]
-    bin.install_symlink libexec/"bin/pandev"
+    bin.install_symlink libexec/"bin/pdm"
     bin.install_symlink libexec/"bin/pandev-cli-plugin"
   end
 
