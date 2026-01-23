@@ -1,13 +1,14 @@
 class PandevCliPlugin < Formula
   desc "Pandev CLI Plugin"
-  homepage "https://github.com/sendilien7/homebrew-pandev-releases"
+  homepage "https://github.com/pandev-metriks/homebrew-pandev-cli"
   version "1.0.0"
+  
 
   if Hardware::CPU.intel?
-    url "https://github.com/sendilien7/homebrew-pandev-releases/releases/download/v1.0.0/pandev-cli-plugin_1.0.0_macOS_amd64.tar.gz"
+    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.0.0/pandev-cli-plugin_1.0.0_macOS_amd64.tar.gz"
     sha256 "05909755402ba74e126a603474960a998cb908963badc17cb69f77ce8f35edee"
   else
-    url "https://github.com/sendilien7/homebrew-pandev-releases/releases/download/v1.0.0/pandev-cli-plugin_1.0.0_macOS_arm64.tar.gz"
+    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.0.0/pandev-cli-plugin_1.0.0_macOS_arm64.tar.gz"
     sha256 "9f032bdf9813fb48d13cf616641f23704b5c522addf88172e4db6a76e9dc4223"
   end
 
