@@ -1,15 +1,15 @@
 class PandevCliPlugin < Formula
   desc "Pandev CLI Plugin"
   homepage "https://github.com/pandev-metriks/homebrew-pandev-cli"
-  version "1.0.1"
+  version "1.0.2"
   
 
   if Hardware::CPU.intel?
-    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.0.1/pandev-cli-plugin_1.0.1_macOS_amd64.tar.gz"
-    sha256 "0de5ffad9dc20c507d08fca4928f7418776f50e7d0680337abda8545b90a57c1"
+    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.0.2/pandev-cli-plugin_1.0.2_macOS_amd64.tar.gz"
+    sha256 "98a9d1812c5811d23fb2954193f3df833636b8ae30c21665eb8b097bd57614b2"
   else
-    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.0.1/pandev-cli-plugin_1.0.1_macOS_arm64.tar.gz"
-    sha256 "3153629a2bdc2a9e23615a678d8e1cda69e33961d3f3f892aa8bece18881cf6c"
+    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.0.2/pandev-cli-plugin_1.0.2_macOS_arm64.tar.gz"
+    sha256 "1d735fd5f896f128807840ed8f062e40db6e1bcad2807951f77ef831751c8d08"
   end
 
   def install
@@ -30,3 +30,4 @@ class PandevCliPlugin < Formula
     assert_match "version", shell_output("#{bin}/pandev status")
   end
 end
+
