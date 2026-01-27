@@ -2,9 +2,9 @@
 
 after release just update the versions with the new hashes. To get the new hashes you need to run (don't forget to change
 the version):
-curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.6/pandev-cli-plugin_1.1.6_macOS_amd64.tar.gz | shasum -a 256
-curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.6/pandev-cli-plugin_1.1.6_macOS_arm64.tar.gz | shasum -a 256
-curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.6/pandev-cli-plugin_1.1.6_Linux_amd64.tar.gz | shasum -a 256
+curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_macOS_amd64.tar.gz | shasum -a 256
+curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_macOS_arm64.tar.gz | shasum -a 256
+curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_Linux_amd64.tar.gz | shasum -a 256
 
 !!! YOU HAVE TO CHANGE THE VERSIONS IN 4 LINES !!!
 =end
@@ -12,18 +12,18 @@ curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download
 class PandevCliPlugin < Formula
   desc "Pandev CLI Plugin"
   homepage "https://github.com/pandev-metriks/homebrew-pandev-cli"
-  version "1.1.6"
+  version "1.1.7"
 
   if OS.mac?
   if Hardware::CPU.intel?
-    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.6/pandev-cli-plugin_1.1.6_macOS_amd64.tar.gz"
-    sha256 "b63dc662dedfdc08cdeb469b14c7bb4d9589ed545e3e85e01b9ff1e80bf31a31"
+    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_macOS_amd64.tar.gz"
+    sha256 "2da62cafb315418fac1e5979538cc32add265944d92ca1c24c50bb8effc9de10"
   else
-    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.6/pandev-cli-plugin_1.1.6_macOS_arm64.tar.gz"
-    sha256 "224907b41b31570e434404c3346e579a188ef1ceaee6046d3d43228b66ef2c8b"
+    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_macOS_arm64.tar.gz"
+    sha256 "f89a31cc03a377c227198b89440eeb9ab8ad1e41b904c9782636c2cc0a1634bc"
     end
   elsif OS.linux?
-    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.6/pandev-cli-plugin_1.1.6_Linux_amd64.tar.gz"
+    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_Linux_amd64.tar.gz"
     sha256 "LINUX_HASH_HERE"
   end
 
