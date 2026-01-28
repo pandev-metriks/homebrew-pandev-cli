@@ -1,10 +1,11 @@
 =begin
+After release, update the version and hashes. To get the new hashes run:
 
 after release just update the versions with the new hashes. To get the new hashes you need to run (don't forget to change
 the version):
-curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_macOS_amd64.tar.gz | shasum -a 256
-curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_macOS_arm64.tar.gz | shasum -a 256
-curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_Linux_amd64.tar.gz | shasum -a 256
+curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.8/pandev-cli-plugin_1.1.8_macOS_amd64.tar.gz | shasum -a 256
+curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.8/pandev-cli-plugin_1.1.8_macOS_arm64.tar.gz | shasum -a 256
+curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.8/pandev-cli-plugin_1.1.8_Linux_amd64.tar.gz | shasum -a 256
 
 !!! YOU HAVE TO CHANGE THE VERSIONS IN 4 LINES !!!
 =end
@@ -12,33 +13,61 @@ curl -sL https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download
 class PandevCliPlugin < Formula
   desc "Pandev CLI Plugin"
   homepage "https://github.com/pandev-metriks/homebrew-pandev-cli"
-  version "1.1.7"
+  version "1.1.8"
 
-  if OS.mac?
-  if Hardware::CPU.intel?
-    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_macOS_amd64.tar.gz"
-    sha256 "2da62cafb315418fac1e5979538cc32add265944d92ca1c24c50bb8effc9de10"
-  else
-    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_macOS_arm64.tar.gz"
-    sha256 "f89a31cc03a377c227198b89440eeb9ab8ad1e41b904c9782636c2cc0a1634bc"
+  on_macos do
+    if Hardware::CPU.intel?
+      url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v#{version}/pandev-cli-plugin_#{version}_macOS_amd64.tar.gz"
+      sha256 "aab3ed512ed727eaf9a1466e3b1cbb90ab57b1837a3600c42817271f87859164"
+    else
+      url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v#{version}/pandev-cli-plugin_#{version}_macOS_arm64.tar.gz"
+      sha256 "76e623bd08a4fbedc8c73695cd65a0985b2b371d1e408d2905b30bc1c5314803"
     end
-  elsif OS.linux?
-    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v1.1.7/pandev-cli-plugin_1.1.7_Linux_amd64.tar.gz"
-    sha256 "LINUX_HASH_HERE"
+  end
+
+  on_linux do
+    url "https://github.com/pandev-metriks/homebrew-pandev-cli/releases/download/v#{version}/pandev-cli-plugin_#{version}_Linux_amd64.tar.gz"
+    sha256 "8e180ad6438e2b66382a3ed0c3d9a6b2bf3bdaf88474b5f9e1738dce9006c267"
   end
 
   def install
     libexec.install Dir["*"]
     bin.install_symlink libexec/"bin/pandev"
     bin.install_symlink libexec/"bin/pandev-cli-plugin"
+
+    # On Linux, create symlinks in /usr/local/bin so sudo can find the commands
+    if OS.linux?
+      begin
+        FileUtils.mkdir_p("/usr/local/bin")
+        FileUtils.ln_sf("#{bin}/pandev", "/usr/local/bin/pandev")
+        FileUtils.ln_sf("#{bin}/pandev-cli-plugin", "/usr/local/bin/pandev-cli-plugin")
+      rescue Errno::EACCES
+        opoo "Could not create symlinks in /usr/local/bin. You may need to run:"
+        opoo "  sudo ln -sf #{bin}/pandev-cli-plugin /usr/local/bin/pandev-cli-plugin"
+      end
+    end
   end
 
-  def post_install
-    system bin/"pandev-cli-plugin", "--install"
-  end
+  def caveats
+    if OS.linux?
+      <<~EOS
+        To complete installation, run:
+          sudo $(which pandev-cli-plugin) --install
 
-  def uninstall
-    system bin/"pandev-cli-plugin", "--uninstall"
+        After installation, you can use 'sudo pandev' directly.
+
+        To uninstall, run before `brew uninstall`:
+          sudo pandev-cli-plugin --uninstall
+      EOS
+    else
+      <<~EOS
+        To complete installation, run:
+          sudo pandev-cli-plugin --install
+
+        To uninstall, run before `brew uninstall`:
+          sudo pandev-cli-plugin --uninstall
+      EOS
+    end
   end
 
   test do
