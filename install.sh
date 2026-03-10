@@ -93,77 +93,38 @@ restore_login_data() {
 }
 
 # -------------------------------------------------------
-# 5. Beta detection and removal
+# 5. Remove any existing installation (beta or stable)
 # -------------------------------------------------------
-BETA_FOUND=false
+echo "Removing existing installation (if any)..."
 
-# 5a. Beta via Homebrew
+# Homebrew: remove beta tap and stable tap
 if command -v brew &>/dev/null; then
-    if brew tap 2>/dev/null | grep -q "pandev-metriks/pandev-cli-beta"; then
-        echo "Beta Homebrew installation detected. Removing..."
-        brew unlink pandev-cli-plugin 2>/dev/null || true
-        brew uninstall pandev-metriks/pandev-cli-beta/pandev-cli-plugin 2>/dev/null || true
-        brew untap "$BETA_TAP" 2>/dev/null || true
-        BETA_FOUND=true
-        echo "Beta Homebrew installation removed."
-    fi
+    brew unlink pandev-cli-plugin 2>/dev/null || true
+    brew uninstall pandev-metriks/pandev-cli-beta/pandev-cli-plugin 2>/dev/null || true
+    brew untap "$BETA_TAP" 2>/dev/null || true
+    brew uninstall pandev-metriks/pandev-cli/pandev-cli-plugin 2>/dev/null || true
+    brew untap pandev-metriks/pandev-cli 2>/dev/null || true
 fi
 
-# 5b. Beta via direct install
-for candidate in "$BIN_LINK" "$INSTALL_DIR/bin/pandev"; do
-    if [ -f "$candidate" ]; then
-        detected_ver=$("$candidate" --version 2>/dev/null || echo "")
-        if echo "$detected_ver" | grep -qi "beta"; then
-            echo "Beta direct installation detected ($detected_ver). Removing..."
-            BETA_FOUND=true
-            save_login_data
-            rm -f "$BIN_LINK" "$BIN_DIR/pandev-cli-plugin"
-            rm -rf "$INSTALL_DIR"
-            echo "Beta direct installation removed."
-            break
-        fi
-    fi
-done
+# Direct install: remove binaries and install dir
+save_login_data
+rm -f "$BIN_LINK" "$BIN_DIR/pandev-cli-plugin"
+rm -rf "$INSTALL_DIR"
 
-$BETA_FOUND && echo "Beta cleanup complete. Installing production version..."
+echo "Cleanup complete."
 
 # -------------------------------------------------------
 # 6. Install
 # -------------------------------------------------------
 if [[ "$OS" == "Darwin" ]] && command -v brew &>/dev/null; then
     echo "Homebrew detected: $(brew --version | head -1)"
-
-    echo "Removing existing installation (if any)..."
-    brew unlink pandev-cli-plugin 2>/dev/null || true
-    brew uninstall pandev-metriks/pandev-cli/pandev-cli-plugin 2>/dev/null || true
-    brew untap pandev-metriks/pandev-cli 2>/dev/null || true
-
     echo "Installing via Homebrew..."
     brew install "$FORMULA"
 
     restore_login_data
 
-    echo ""
-    echo "Installation complete!"
-    echo ""
-    if command -v pandev &>/dev/null; then
-        echo "pandev is ready to use."
-        echo "Try: pandev --version"
-    else
-        echo "If command not found, restart your terminal."
-    fi
-    echo ""
-    exit 0
-
-else
+elif [[ "$OS_NAME" == "Linux" ]] || [[ "$OS_NAME" == "macOS" ]]; then
     echo "Using direct GitHub release installation."
-
-    # Save credentials before wiping the install dir
-    save_login_data
-
-    rm -rf "$INSTALL_DIR"
-    rm -f "$BIN_LINK" "$BIN_DIR/pandev-cli-plugin"
-
     echo "Version: $VERSION"
 
     ASSET="pandev-cli-plugin_${VERSION}_${OS_NAME}_${ARCH_NAME}.tar.gz"
@@ -221,15 +182,29 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
 fi
 
 # -------------------------------------------------------
-# Done
+# 8. Verify installation
 # -------------------------------------------------------
 echo ""
 echo "Installation complete!"
 echo ""
 
+INSTALLED_BIN=""
 if command -v pandev &>/dev/null; then
+    INSTALLED_BIN=$(command -v pandev)
+elif [ -x "$BIN_LINK" ]; then
+    INSTALLED_BIN="$BIN_LINK"
+fi
+
+if [ -n "$INSTALLED_BIN" ]; then
+    INSTALLED_VER=$("$INSTALLED_BIN" -v 2>/dev/null || "$INSTALLED_BIN" --version 2>/dev/null || echo "unknown")
     echo "pandev is ready to use."
-    echo "Try: pandev --version"
+    echo "Installed version: $INSTALLED_VER"
+    if echo "$INSTALLED_VER" | grep -qF "$VERSION"; then
+        echo "Version check: OK (v$VERSION)"
+    else
+        echo "WARNING: expected v$VERSION but got: $INSTALLED_VER"
+        echo "The binary in the GitHub release may have been built with a different version string."
+    fi
 else
     echo "If command not found, restart your terminal."
 fi
