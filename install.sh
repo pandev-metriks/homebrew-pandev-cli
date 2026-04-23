@@ -61,8 +61,20 @@ TMP_DIR=""
 CREDS_BACKUP=$(mktemp -d)
 
 cleanup() {
+    local exit_code=$?
     [ -n "$TMP_DIR" ] && rm -rf "$TMP_DIR"
     rm -rf "$CREDS_BACKUP"
+    if [ "$exit_code" -ne 0 ]; then
+        echo "" >&2
+        echo "==================================================================" >&2
+        echo "ERROR: Installation failed." >&2
+        echo "" >&2
+        echo "If this looks like a network issue (timeout, connection error)," >&2
+        echo "please check your internet connection and try again in a few minutes." >&2
+        echo "" >&2
+        echo "If the problem persists, contact the pandev-cli team." >&2
+        echo "==================================================================" >&2
+    fi
 }
 trap cleanup EXIT
 
@@ -116,14 +128,7 @@ echo "Cleanup complete."
 # -------------------------------------------------------
 # 6. Install
 # -------------------------------------------------------
-if [[ "$OS" == "Darwin" ]] && command -v brew &>/dev/null; then
-    echo "Homebrew detected: $(brew --version | head -1)"
-    echo "Installing via Homebrew..."
-    brew install "$FORMULA"
-
-    restore_login_data
-
-elif [[ "$OS_NAME" == "Linux" ]] || [[ "$OS_NAME" == "macOS" ]]; then
+install_direct() {
     echo "Using direct GitHub release installation."
     echo "Version: $VERSION"
 
@@ -133,7 +138,8 @@ elif [[ "$OS_NAME" == "Linux" ]] || [[ "$OS_NAME" == "macOS" ]]; then
     TMP_DIR=$(mktemp -d)
 
     echo "Downloading $ASSET..."
-    curl -fsSL "$DOWNLOAD_URL" -o "$TMP_DIR/$ASSET"
+    curl -fsSL --retry 5 --retry-delay 3 --connect-timeout 30 --max-time 600 \
+         "$DOWNLOAD_URL" -o "$TMP_DIR/$ASSET"
 
     echo "Extracting..."
     mkdir -p "$INSTALL_DIR"
@@ -144,9 +150,38 @@ elif [[ "$OS_NAME" == "Linux" ]] || [[ "$OS_NAME" == "macOS" ]]; then
     mkdir -p "$BIN_DIR"
     ln -sf "$INSTALL_DIR/bin/pandev" "$BIN_LINK"
     ln -sf "$INSTALL_DIR/bin/pandev-cli-plugin" "$BIN_DIR/pandev-cli-plugin"
+}
 
-    restore_login_data
+brew_install_with_retry() {
+    local attempts=3
+    local i=1
+    while [ "$i" -le "$attempts" ]; do
+        echo "Homebrew install attempt $i/$attempts..."
+        if brew install "$FORMULA"; then
+            return 0
+        fi
+        if [ "$i" -lt "$attempts" ]; then
+            echo "Attempt $i failed, retrying in 5s..."
+            sleep 5
+        fi
+        i=$((i + 1))
+    done
+    return 1
+}
+
+if [[ "$OS" == "Darwin" ]] && command -v brew &>/dev/null; then
+    echo "Homebrew detected: $(brew --version | head -1)"
+    if brew_install_with_retry; then
+        echo "Homebrew install succeeded."
+    else
+        echo "Homebrew install failed after retries — falling back to direct GitHub release..."
+        install_direct
+    fi
+else
+    install_direct
 fi
+
+restore_login_data
 
 # -------------------------------------------------------
 # 7. Add ~/.local/bin to PATH permanently
