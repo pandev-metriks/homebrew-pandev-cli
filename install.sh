@@ -55,15 +55,17 @@ if [[ "$OS" == "Darwin" ]]; then
 fi
 
 # -------------------------------------------------------
-# 4. Helpers: save / restore login data
+# 4. Cleanup trap / error handling
 # -------------------------------------------------------
+# NOTE: login state (credentials/config under ~/.pandev) is preserved by
+# removing only the app payload in section 5 — never the whole ~/.pandev tree.
+# So there is no save/restore dance here, and a failed install can't log the
+# user out.
 TMP_DIR=""
-CREDS_BACKUP=$(mktemp -d)
 
 cleanup() {
     local exit_code=$?
     [ -n "$TMP_DIR" ] && rm -rf "$TMP_DIR"
-    rm -rf "$CREDS_BACKUP"
     if [ "$exit_code" -ne 0 ]; then
         echo "" >&2
         echo "==================================================================" >&2
@@ -78,50 +80,33 @@ cleanup() {
 }
 trap cleanup EXIT
 
-save_login_data() {
-    if [ ! -d "$INSTALL_DIR" ]; then
-        return
-    fi
-    echo "Saving login data..."
-    find "$INSTALL_DIR" -maxdepth 3 -type f \( \
-        -name "*.json" -o -name "*.yaml" -o -name "*.yml" -o -name "*.toml" -o \
-        -name "credentials" -o -name "credentials.*" -o \
-        -name "auth"        -o -name "auth.*"        -o \
-        -name "token"       -o -name "token.*"       -o \
-        -name "config"      -o -name "config.*"      \
-    \) 2>/dev/null | while IFS= read -r f; do
-        rel="${f#$INSTALL_DIR/}"
-        mkdir -p "$CREDS_BACKUP/$(dirname "$rel")"
-        cp "$f" "$CREDS_BACKUP/$rel"
-    done
-}
-
-restore_login_data() {
-    if [ -n "$(ls -A "$CREDS_BACKUP" 2>/dev/null)" ]; then
-        echo "Restoring login data..."
-        mkdir -p "$INSTALL_DIR"
-        cp -rn "$CREDS_BACKUP/." "$INSTALL_DIR/"
-    fi
-}
-
 # -------------------------------------------------------
 # 5. Remove any existing installation (beta or stable)
 # -------------------------------------------------------
 echo "Removing existing installation (if any)..."
 
-# Homebrew: remove beta tap and stable tap
+# Homebrew: remove EVERY installed copy of the formula — any version, and
+# whether it came from the beta tap or the stable tap. --force + the BARE
+# formula name uninstalls all installed kegs/versions regardless of origin
+# tap, and works even if that tap is no longer present. (The previous
+# tap-qualified uninstall silently no-ops once its tap is untapped, leaving a
+# stale keg behind — which then made the reinstall below a no-op, so the old
+# version stayed and "nothing changed".)
 if command -v brew &>/dev/null; then
     brew unlink pandev-cli-plugin 2>/dev/null || true
-    brew uninstall pandev-metriks/pandev-cli-beta/pandev-cli-plugin 2>/dev/null || true
+    brew uninstall --force pandev-cli-plugin 2>/dev/null || true
     brew untap "$BETA_TAP" 2>/dev/null || true
-    brew uninstall pandev-metriks/pandev-cli/pandev-cli-plugin 2>/dev/null || true
     brew untap pandev-metriks/pandev-cli 2>/dev/null || true
+    brew cleanup pandev-cli-plugin 2>/dev/null || true
 fi
 
-# Direct install: remove binaries and install dir
-save_login_data
+# Direct install: remove only the unpacked app payload + bin symlinks. Login
+# state (credentials/config) lives alongside the payload under ~/.pandev
+# (e.g. ~/.pandev/credentials), so we delete just the app dirs — never the
+# whole tree — and the user stays logged in across the reinstall, even if the
+# install below fails partway.
 rm -f "$BIN_LINK" "$BIN_DIR/pandev-cli-plugin"
-rm -rf "$INSTALL_DIR"
+rm -rf "$INSTALL_DIR/bin" "$INSTALL_DIR/lib" "$INSTALL_DIR/runtime" "$INSTALL_DIR/scripts"
 
 echo "Cleanup complete."
 
@@ -181,7 +166,15 @@ else
     install_direct
 fi
 
-restore_login_data
+# Point THIS shell at the freshly installed binary:
+#  - brew shellenv ensures Homebrew's bin dir is on PATH
+#  - hash -r drops bash's cached command->path map so `pandev` resolves to the
+#    NEW keg instead of a path cached earlier in the session (a stale hash is a
+#    common reason `pandev --version` keeps reporting the old version).
+if command -v brew &>/dev/null; then
+    eval "$(brew shellenv 2>/dev/null)" || true
+fi
+hash -r 2>/dev/null || true
 
 # -------------------------------------------------------
 # 7. Add ~/.local/bin to PATH permanently
@@ -237,8 +230,14 @@ if [ -n "$INSTALLED_BIN" ]; then
     if echo "$INSTALLED_VER" | grep -qF "$VERSION"; then
         echo "Version check: OK (v$VERSION)"
     else
-        echo "WARNING: expected v$VERSION but got: $INSTALLED_VER"
-        echo "The binary in the GitHub release may have been built with a different version string."
+        echo "WARNING: expected v$VERSION but 'pandev' reports: $INSTALLED_VER"
+        echo "An older copy of pandev is earlier in your PATH and shadows the new one:"
+        echo "  pandev resolves to: $INSTALLED_BIN"
+        if command -v brew &>/dev/null; then
+            echo "  freshly installed:  $(brew --prefix)/bin/pandev"
+        fi
+        echo "Remove the stale copy above (often a leftover '$BIN_LINK'), then run:"
+        echo "  hash -r && pandev --version"
     fi
 else
     echo "If command not found, restart your terminal."
