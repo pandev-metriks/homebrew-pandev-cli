@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="2.2.2"
+VERSION="2.2.3"
 
 REPO="pandev-metriks/homebrew-pandev-cli"
 TAP="pandev-metriks/pandev-cli"
